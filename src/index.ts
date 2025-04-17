@@ -2,11 +2,15 @@ import dotenv from "dotenv";
 import express, { Express, Request, Response, NextFunction } from "express";
 import qrcode from "qrcode-terminal";
 import { Client, LocalAuth } from "whatsapp-web.js";
-import multer from "multer";
+import multer, { StorageEngine } from "multer";
 import path from "path";
 import fs from "fs";
 
 dotenv.config();
+
+// Ensure you have installed multer and its types:
+// npm install multer @types/multer
+// and that your tsconfig.json has "esModuleInterop": true
 
 // WhatsApp client setup
 const client = new Client({
@@ -36,14 +40,22 @@ client.initialize();
 const app: Express = express();
 app.use(express.json());
 
-// Configure Multer storage for uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+// Configure Multer storage for uploads with proper typings
+const storage: StorageEngine = multer.diskStorage({
+  destination: (
+    req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, destination: string) => void
+  ) => {
     const uploadDir = path.join(__dirname, "uploads");
     fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: (
+    req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, filename: string) => void
+  ) => {
     const timestamp = Date.now();
     const ext = path.extname(file.originalname);
     const base = path.basename(file.originalname, ext);
@@ -77,11 +89,15 @@ app.post("/send", (req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// File upload route
+// File upload route with typed request for .file
 app.post(
   "/upload",
   upload.single("file"),
-  (req: Request, res: Response, next: NextFunction) => {
+  (
+    req: Request & { file?: Express.Multer.File },
+    res: Response,
+    next: NextFunction
+  ) => {
     if (!req.file) {
       res.status(400).json({ status: false, message: "No file uploaded" });
       return;
