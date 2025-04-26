@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  cover String
+  name  String
+  items Item[]
+}
+
+model Tag {
+  id    Int         @id @default(autoincrement())
+  cover String
+  name  String
+  items TagOnItem[]
+}
+
+model Item {
+  id           Int           @id @default(autoincrement())
+  title        String
+  description  String
+  price        Int
+  cover        String
+  discount     Int?
+  testimonials Testimonial[]
+  ebook        Ebook?
+  training     Training?
+  categoryId   Int
+  files        File[]
+  category     Category      @relation(fields: [categoryId], references: [id])
+  tags         TagOnItem[]
+}
+
+model Ebook {
+  id       Int     @id @default(autoincrement())
+  author   String?
+  isbn     String?
+  language String?
+  pages    Int?
+  edition  String?
+  date     String?
+  itemId   Int     @unique
+  item     Item    @relation(fields: [itemId], references: [id])
+}
+
+model Training {
+  id      Int     @id @default(autoincrement())
+  modules String?
+  itemId  Int     @unique
+  item    Item    @relation(fields: [itemId], references: [id])
+}
+
+model Testimonial {
+  id      Int    @id @default(autoincrement())
+  name    String
+  message String
+  itemId  Int
+  item    Item   @relation(fields: [itemId], references: [id])
+}
+
+model TagOnItem {
+  itemId Int
+  item   Item @relation(fields: [itemId], references: [id])
+  tagId  Int
+  tag    Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([itemId, tagId])
+}
+
+model File {
+  id     Int     @id @default(autoincrement())
+  title  String?
+  url    String
+  itemId Int
+  item   Item    @relation(fields: [itemId], references: [id])
+}
