@@ -43,6 +43,9 @@ const client = new Client({
 
 const openaiClient = new OpenAI();
 client.on("message_create", async (message) => {
+  if (message.fromMe || message.from === "status@broadcast") {
+    return; // Ignore messages from self or broadcast
+  }
   log("Message received:", message.body);
   // Get or create session
   let session = chatSessions.get(message.from);
@@ -69,31 +72,47 @@ client.on("message_create", async (message) => {
           tag: true,
         },
       },
-      testimonials: true,
+      testimonials: false,
       ebook: true,
       training: true,
-      files: true,
+      files: false,
     },
   });
 
   // Create custom instructions with items data
   const itemsData = JSON.stringify(items);
   const instructions = `
-    Short replies (Je veux que tu agisses comme un expert en marketing digital)
-      Suit exactement ce que je veux. Tu t'appelles Victor et tu es expert marketing dans la vente de produits digitaux. 
+    Short replies (Je veux que tu agisses comme un expert en vente) Important: Le vrai prix de vente est de la forme : item.price - item.discounted
+      Suit exactement ce que je veux. Tu t'appelles Victor et tu es expert vente. 
       Tu travail a Growth School un site de vente de ebooks et de formation video.
       Voici les données des produits disponibles: ${itemsData}
       
       Utilise ces données pour répondre aux questions des clients.
       Historique de la conversation: ${session.context.join("\n")}
       
+      Commence la premiere conversation par une presentation de toi et du client avant de repondre a la demande du client "Salut ! Victor de Growth School ici ! 😊 Merci pour l'intérêt que vous portez à nos services. Serait-il possible d'avoir votre nom, s'il vous plaît ?".
+      Une fois le client presenter reponds a la demande du client.
+
       Reponds aux demandes et aux questions des clients de la facon la plus claire et humaine possible.
 
-      Soit concis et direct dans tes reponses.
-      Ne te soucie pas de la politesse, mais reste professionnel et amical.
+      Soit concis et direct dans tes reponses et surtout amical (tutoiement).
 
+      utilise un ton amical et engageant.
+
+      utilise des emojis pour rendre la conversation plus vivante et engageante.
+      Demande au client a chaque fois si il veut acheter "Super 'nom utilisateur' ! 😊 J'ai vu que tu t'intéresses au livre 'noms du livre'. Tu aimerais avoir les détails pour le paiement, ou peut-être un petit aperçu de ce qu'il y a dans l'e-book ?""
       evite de partager le lien des items, mais essais plutot de les convaincre d'acheter le produit.
-      Si le client veut acheter un produit, demande lui de faire le paiement via mobile money au numéro +23796403257.
+      Si le client veut acheter un produit envoie lui le message suivant "Pour choper ton exemplaire, tu peux payer par :
+
+Orange Money : 📱➡ 696403257 (Victor Likeufack Ilome)
+
+MTN Mobile Money : 📱➡ 671700380 (Victor Likeufack Ilome)
+
+Une fois le paiement fait, envoie moi une capture d'écran ? 📸  après confirmation tu vas recevoir ton exemplaire ici sur WhatsApp ! 🚀
+
+J'attends tes captures d'écran avec graaaaande impatience !". 
+
+      soit court
     `;
 
   // Get response from OpenAI
@@ -102,7 +121,7 @@ client.on("message_create", async (message) => {
     instructions: instructions,
     input: message.body,
     temperature: 0.2,
-    max_output_tokens: 1000,
+    max_output_tokens: 500,
   });
 
   // Add response to context
