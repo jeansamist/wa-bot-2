@@ -2,3 +2,4 @@
 /.wwebjs_cache
 /dist
 /whatsapp-session.json
+.env
